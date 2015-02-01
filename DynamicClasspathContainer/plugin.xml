@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.2"?>
+<plugin>
+   <extension
+       point="org.eclipse.jdt.core.classpathContainerInitializer">
+      <classpathContainerInitializer
+          id="ch.arktos.dcc.DYNAMIC_CLASSPATH_CONTAINER"
+          class="ch.arktos.dcc.DynamicClasspathContainerInitializer"/>
+   </extension>
+
+   <extension
+       point="org.eclipse.jdt.ui.classpathContainerPage">
+      <classpathContainerPage
+          id="ch.arktos.dcc.DYNAMIC_CLASSPATH_CONTAINER"
+          name="%classpathContainerPage.name"
+          class="ch.arktos.dcc.DynamicClasspathContainerPage"/>
+   </extension>
+
+   <extension
+         point="org.eclipse.jdt.ui.javaElementFilters">
+         <filter
+               id="ch.arktos.dcc.DYNAMIC_CLASSPATH_CONTAINER"
+               targetId="org.eclipse.jdt.ui.PackageExplorer"
+               enabled="true"
+               name="%filter.name"
+               description="%filter.description"
+               class="ch.arktos.dcc.DynamicClasspathContainerViewerFilter"/>
+   </extension>
+</plugin>
