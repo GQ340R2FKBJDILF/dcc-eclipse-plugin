@@ -34,10 +34,10 @@ public class DynamicClasspathContainerInitializer extends ClasspathContainerInit
 	 * .core.runtime.IPath, org.eclipse.jdt.core.IJavaProject)
 	 */
 	@Override
-	public void initialize(IPath path, IJavaProject project) throws CoreException {
-		final DynamicClasspathContainer container = new DynamicClasspathContainer(path, project);
+	public void initialize(IPath containerPath, IJavaProject project) throws CoreException {
+		final DynamicClasspathContainer container = new DynamicClasspathContainer(containerPath, project);
 		if (container.isValid()) {
-			JavaCore.setClasspathContainer(path, new IJavaProject[] { project }, new IClasspathContainer[] { container }, monitor);
+			JavaCore.setClasspathContainer(containerPath, new IJavaProject[] { project }, new IClasspathContainer[] { container }, monitor);
 		}
 	}
 

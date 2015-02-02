@@ -5,6 +5,8 @@ import java.io.FilenameFilter;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import org.eclipse.core.resources.IFolder;
+import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
@@ -82,21 +84,26 @@ public class DynamicClasspathContainer implements IClasspathContainer {
 		final ArrayList<IClasspathEntry> entryList = new ArrayList<IClasspathEntry>();
 
 		// retrieve library files
-		final IPath projectPath = ResourcesPlugin.getWorkspace().getRoot().getLocation().append(projectName).append(libDir);
-		final File projectFile = projectPath.toFile();
-		final File[] libraries = projectFile.listFiles(new LibraryRegexFilter(libRegex));
-		if (libraries != null) {
-			for (File library : libraries) {
+		final IProject project = ResourcesPlugin.getWorkspace().getRoot().getProject(projectName);
+		if (project.exists()) {
+			final IFolder libFolder = project.getFolder(libDir);
+			if (libFolder.exists()) {
+				final File libFile = new File(libFolder.getLocationURI());
+				final File[] libraries = libFile.listFiles(new LibraryRegexFilter(libRegex));
+				if (libraries != null) {
+					for (File library : libraries) {
 
-				// retrieve source attachment for library
-				final Path src = getPathWithPart(library, srcRegex);
-				final IPath srcPath = getRootPath(src);
+						// retrieve source attachment for library
+						final Path src = getPathWithPart(library, srcRegex);
+						final IPath srcPath = getRootPath(src);
 
-				// retrieve javadoc attachment for library
-				final Path javadocPath = getPathWithPart(library, docRegex);
-				final IClasspathAttribute[] attribs = getJavadocAttibute(javadocPath);
+						// retrieve javadoc attachment for library
+						final Path javadocPath = getPathWithPart(library, docRegex);
+						final IClasspathAttribute[] attribs = getJavadocAttibute(javadocPath);
 
-				entryList.add(JavaCore.newLibraryEntry(new Path(library.getAbsolutePath()), src, srcPath, new IAccessRule[] {}, attribs, isExported));
+						entryList.add(JavaCore.newLibraryEntry(new Path(library.getAbsolutePath()), src, srcPath, new IAccessRule[] {}, attribs, isExported));
+					}
+				}
 			}
 		}
 		return entryList.toArray(new IClasspathEntry[entryList.size()]);

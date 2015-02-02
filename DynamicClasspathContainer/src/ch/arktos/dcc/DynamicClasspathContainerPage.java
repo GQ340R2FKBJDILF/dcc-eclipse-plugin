@@ -1,9 +1,11 @@
 package ch.arktos.dcc;
 
-import java.io.File;
 import java.util.regex.Pattern;
 
+import org.eclipse.core.resources.IFolder;
+import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.jdt.core.IAccessRule;
@@ -11,8 +13,12 @@ import org.eclipse.jdt.core.IClasspathAttribute;
 import org.eclipse.jdt.core.IClasspathEntry;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.JavaModelException;
+import org.eclipse.jdt.ui.JavaElementLabelProvider;
 import org.eclipse.jdt.ui.wizards.IClasspathContainerPage;
 import org.eclipse.jdt.ui.wizards.IClasspathContainerPageExtension;
+import org.eclipse.jface.viewers.ILabelProvider;
+import org.eclipse.jface.window.Window;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -21,9 +27,9 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.DirectoryDialog;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
+import org.eclipse.ui.dialogs.ElementListSelectionDialog;
 
 /**
  * The Class DynamicClasspathContainerPage.
@@ -120,17 +126,16 @@ public class DynamicClasspathContainerPage extends WizardPage implements IClassp
 		srcRegexText.setText(srcRegexText.getText().trim());
 		docRegexText.setText(docRegexText.getText().trim());
 
-		IPath projectPath = workspace.append(projectLabel.getText());
-
-		if (!isProjectDir(projectPath)) {
+		final IProject project = ResourcesPlugin.getWorkspace().getRoot().getProject(projectLabel.getText());
+		if (!project.exists()) {
 			setErrorMessage(Messages.ProjectErr);
 			return false;
 		}
-		if (!isDirValid(projectPath, binDirText.getText())) {
+		if (!createProjectFolder(project, binDirText.getText())) {
 			setErrorMessage(Messages.BinDirErr);
 			return false;
 		}
-		if (!isDirValid(projectPath, libDirText.getText())) {
+		if (!createProjectFolder(project, libDirText.getText())) {
 			setErrorMessage(Messages.LibDirErr);
 			return false;
 		}
@@ -149,15 +154,22 @@ public class DynamicClasspathContainerPage extends WizardPage implements IClassp
 		return true;
 	}
 
+	private boolean createProjectFolder(IProject project, String folderName) {
+		final IFolder libFolder = project.getFolder(libDirText.getText());
+		if (!libFolder.exists()) {
+			try {
+				libFolder.create(false, false, null);
+			} catch (CoreException e) {
+				return false;
+			}
+		}
+		return libFolder.exists();
+	}
+
 	/*
 	 * (non-Javadoc)
 	 * 
 	 * @see org.eclipse.jdt.ui.wizards.IClasspathContainerPage#getSelection()
-	 */
-	/**
-	 * Gets the selection.
-	 * 
-	 * @return the selection
 	 */
 	@Override
 	public IClasspathEntry getSelection() {
@@ -170,9 +182,8 @@ public class DynamicClasspathContainerPage extends WizardPage implements IClassp
 		path = path.append(PathEncoder.encode(docRegexText.getText())); // 6
 		path = path.append(PathEncoder.encode(Boolean.toString(exportedBox.getSelection()))); // 7
 
-		IPath binPath = new Path(projectLabel.getText()).append(binDirText.getText());
-		IClasspathAttribute attribute = JavaCore.newClasspathAttribute(PREFIX_BINARY_PATH, binPath.toString());
-
+		final IPath binPath = new Path(projectLabel.getText()).append(binDirText.getText());
+		final IClasspathAttribute attribute = JavaCore.newClasspathAttribute(PREFIX_BINARY_PATH, binPath.toString());
 		return JavaCore.newContainerEntry(path, new IAccessRule[] {}, new IClasspathAttribute[] { attribute }, exportedBox.getSelection());
 	}
 
@@ -182,12 +193,6 @@ public class DynamicClasspathContainerPage extends WizardPage implements IClassp
 	 * @see
 	 * org.eclipse.jdt.ui.wizards.IClasspathContainerPage#setSelection(org.eclipse
 	 * .jdt.core.IClasspathEntry)
-	 */
-	/**
-	 * Sets the selection.
-	 * 
-	 * @param entry
-	 *            the new selection
 	 */
 	@Override
 	public void setSelection(IClasspathEntry entry) {
@@ -225,16 +230,39 @@ public class DynamicClasspathContainerPage extends WizardPage implements IClassp
 
 			@Override
 			public void widgetSelected(SelectionEvent event) {
-				DirectoryDialog dialog = new DirectoryDialog(parent.getShell(), SWT.OPEN);
-				dialog.setMessage(Messages.SelectDialog);
-				dialog.setFilterPath(workspace.append(projectLabel.getText()).toOSString());
-				File file = new File(dialog.open());
-				if (file != null && file.exists() && file.isDirectory()) {
-					projectLabel.setText(file.getName());
+				final IJavaProject javaProject = getJavaProject();
+				if (javaProject != null) {
+					projectLabel.setText(javaProject.getElementName());
 				}
 			}
 
 		});
+	}
+
+	private IJavaProject getJavaProject() {
+		IJavaProject[] projects;
+		try {
+			projects = JavaCore.create(ResourcesPlugin.getWorkspace().getRoot()).getJavaProjects();
+		} catch (JavaModelException e) {
+			projects = new IJavaProject[0];
+		}
+
+		if (projects.length > 0) {
+			final ILabelProvider labelProvider = new JavaElementLabelProvider(JavaElementLabelProvider.SHOW_DEFAULT);
+			final ElementListSelectionDialog dialog = new ElementListSelectionDialog(getShell(), labelProvider);
+			dialog.setTitle(Messages.ProjectSelectionTitle);
+			dialog.setMessage(Messages.ProjectSelectionMessage);
+			dialog.setElements(projects);
+			dialog.setInitialSelections(new Object[] { projects[0] });
+
+			if (dialog.open() == Window.OK) {
+				final Object element = dialog.getFirstResult();
+				if (element instanceof IJavaProject) {
+					return (IJavaProject) element;
+				}
+			}
+		}
+		return null;
 	}
 
 	/**
@@ -379,34 +407,4 @@ public class DynamicClasspathContainerPage extends WizardPage implements IClassp
 		return true;
 	}
 
-	/**
-	 * Checks that the chosen directory is valid. Must meet the following: -
-	 * exists - is a directory
-	 * 
-	 * @param dir
-	 *            chosen directory
-	 * @return true if the directory is valid
-	 */
-	private boolean isDirValid(IPath root, String dir) {
-		final File libPath = new File(root.toOSString(), dir);
-		libPath.mkdirs();
-		return libPath.isDirectory();
-	}
-
-	/**
-	 * Checks that the chosen directory is valid. Must meet the following: -
-	 * exists - is a directory
-	 * 
-	 * @param dir
-	 *            chosen directory
-	 * @return true if the directory is valid
-	 */
-	private boolean isProjectDir(IPath path) {
-		File projectPath = new File(path.toOSString());
-		if (!projectPath.exists() || !projectPath.isDirectory() || !workspace.toOSString().equals(projectPath.getParentFile().getAbsolutePath())) {
-			return false;
-		}
-
-		return true;
-	}
 }
