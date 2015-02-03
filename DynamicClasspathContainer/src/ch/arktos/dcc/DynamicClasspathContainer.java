@@ -31,8 +31,8 @@ public class DynamicClasspathContainer implements IClasspathContainer {
   public final static String ID = "ch.arktos.dcc.DYNAMIC_CLASSPATH_CONTAINER";
 
   private final IPath        path;
-  private final IProject     project;
 
+  private final String       projectName;
   private final String       libDir;
   private final String       libRegex;
   private final String       srcRegex;
@@ -58,7 +58,8 @@ public class DynamicClasspathContainer implements IClasspathContainer {
    */
   public DynamicClasspathContainer(IPath path, IJavaProject project) throws JavaModelException {
     this.path = path;
-    this.project = project != null ? project.getProject() : ResourcesPlugin.getWorkspace().getRoot().getProject(PathEncoder.decode(path.segment(2)));
+
+    this.projectName = PathEncoder.decode(path.segment(1));
     this.libDir = PathEncoder.decode(path.segment(3));
     this.libRegex = PathEncoder.decode(path.segment(4));
     this.srcRegex = PathEncoder.decode(path.segment(5));
@@ -71,6 +72,7 @@ public class DynamicClasspathContainer implements IClasspathContainer {
     final ArrayList<IClasspathEntry> entryList = new ArrayList<IClasspathEntry>();
 
     // retrieve library files
+    final IProject project = ResourcesPlugin.getWorkspace().getRoot().getProject(projectName);
     if (project.exists()) {
       final IFolder libFolder = project.getProject().getFolder(libDir);
       if (libFolder.exists()) {
@@ -131,7 +133,7 @@ public class DynamicClasspathContainer implements IClasspathContainer {
    */
   @Override
   public String getDescription() {
-    final IPath projectPath = new Path(project.getName());
+    final IPath projectPath = new Path(projectName);
     return projectPath.append(libDir).toPortableString();
   }
 
