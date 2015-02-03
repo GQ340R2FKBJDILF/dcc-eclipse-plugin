@@ -1,3 +1,4 @@
+
 package ch.arktos.dcc;
 
 import org.eclipse.core.runtime.CoreException;
@@ -9,6 +10,7 @@ import org.eclipse.jdt.core.IClasspathContainer;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.JavaCore;
 
+
 /**
  * The Class DynamicClasspathContainerInitializer.
  * 
@@ -16,40 +18,38 @@ import org.eclipse.jdt.core.JavaCore;
  */
 public class DynamicClasspathContainerInitializer extends ClasspathContainerInitializer {
 
-	/** The monitor. */
-	private final IProgressMonitor monitor;
+  /** The monitor. */
+  private final IProgressMonitor monitor;
 
-	/**
-	 * Instantiates a new dynamic classpath container initializer.
-	 */
-	public DynamicClasspathContainerInitializer() {
-		this.monitor = new NullProgressMonitor();
-	}
+  /**
+   * Instantiates a new dynamic classpath container initializer.
+   */
+  public DynamicClasspathContainerInitializer() {
+    this.monitor = new NullProgressMonitor();
+  }
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * org.eclipse.jdt.core.ClasspathContainerInitializer#initialize(org.eclipse
-	 * .core.runtime.IPath, org.eclipse.jdt.core.IJavaProject)
-	 */
-	@Override
-	public void initialize(IPath containerPath, IJavaProject project) throws CoreException {
-		final DynamicClasspathContainer container = new DynamicClasspathContainer(containerPath, project);
-		if (container.isValid()) {
-			JavaCore.setClasspathContainer(containerPath, new IJavaProject[] { project }, new IClasspathContainer[] { container }, monitor);
-		}
-	}
+  /*
+   * (non-Javadoc)
+   * 
+   * @see
+   * org.eclipse.jdt.core.ClasspathContainerInitializer#initialize(org.eclipse
+   * .core.runtime.IPath, org.eclipse.jdt.core.IJavaProject)
+   */
+  @Override
+  public void initialize(IPath containerPath, IJavaProject project) throws CoreException {
+    final DynamicClasspathContainer container = new DynamicClasspathContainer(containerPath, project);
+    JavaCore.setClasspathContainer(containerPath, new IJavaProject[] {project}, new IClasspathContainer[] {container}, monitor);
+  }
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * org.eclipse.jdt.core.ClasspathContainerInitializer#getComparisonID(org
-	 * .eclipse.core.runtime.IPath, org.eclipse.jdt.core.IJavaProject)
-	 */
-	@Override
-	public Object getComparisonID(IPath containerPath, IJavaProject project) {
-		return containerPath;
-	}
+  /*
+   * (non-Javadoc)
+   * 
+   * @see
+   * org.eclipse.jdt.core.ClasspathContainerInitializer#getComparisonID(org
+   * .eclipse.core.runtime.IPath, org.eclipse.jdt.core.IJavaProject)
+   */
+  @Override
+  public Object getComparisonID(IPath containerPath, IJavaProject project) {
+    return containerPath;
+  }
 }
