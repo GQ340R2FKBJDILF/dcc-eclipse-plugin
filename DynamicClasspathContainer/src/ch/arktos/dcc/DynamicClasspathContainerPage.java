@@ -155,7 +155,7 @@ public class DynamicClasspathContainerPage extends WizardPage implements IClassp
   }
 
   private boolean createProjectFolder(IProject project, String folderName) {
-    final IFolder libFolder = project.getFolder(libDirText.getText());
+    final IFolder libFolder = project.getFolder(folderName);
     if (!libFolder.exists()) {
       try {
         libFolder.create(false, false, null);
